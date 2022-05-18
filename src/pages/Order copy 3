@@ -1,0 +1,373 @@
+import React, { useEffect, useState } from 'react';
+import Heading from '../elements/Heading';
+import View from '../elements/View';
+
+// import { Container } from './styles';
+import styled from 'styled-components';
+import Icon from '../elements/Icon';
+import { colors } from '../config';
+import { decimalToHour, decimalToMoney, formatTimeWithExtension } from '../services/functions';
+import { useAlert } from '../hooks/alert';
+import { useApi } from '../contexts/main';
+import { useOrdersDispatch } from '../contexts/orders';
+import { setTimeout } from 'timers';
+import StatusProgress from '../components/StatusProgress';
+import OrderHeaderSession from '../components/OrderHeaderSession';
+import Button from '../elements/Button';
+import Flex from '../elements/Flex';
+
+
+
+
+
+const Container = styled.div`
+    position: relative;
+   // padding-top: 100vh;
+`;
+
+
+const Bottom = styled.div`
+    height: 100vh;
+    margin-top: 50px;
+    
+    .features{
+       display: flex;
+       justify-content: center;
+
+       .feature{
+          background-color: ${colors.gray50};
+          border-radius: 10px;
+          margin: 0 10px;
+          width: 150px;
+          height: 200px;
+          padding: 20px 10px;
+       }
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 20px 0px 0px 0px;
+      .box {
+        background-color: ${colors.red100};
+        max-width: 680px;
+        width: 100%;
+        border-radius: 10px;
+        padding: 20px;
+      }
+    }
+
+    .table{
+
+      display: flex;
+      padding: 20px 0;
+      flex-direction: column;
+      align-items: center;
+
+      > .row{
+       
+        max-width: 680px;
+        width: 100%;
+        padding: 10px;
+        border-bottom: 1px solid ${colors.gray100};
+
+     
+        
+        > .top {
+
+          display: flex;
+          align-items: center;
+
+          > .quantity {
+            padding-right: 10px;
+          }
+          > .name {
+            flex :1;
+          }
+          > .total {
+
+          }
+
+        }
+
+        > .bottom {
+
+          padding-top: 5px;
+
+          > .subrow {
+            padding: 5px;
+            display: flex;
+            align-items: center;
+
+            .arrow{
+              height: 20px;
+              width: 10px;
+              border: 1px solid transparent;
+              border-left: 2px solid ${colors.gray200};
+              border-bottom: 2px solid ${colors.gray200};
+              //background: ${colors.gray500};
+              border-radius: 0px 0px 0px 5px;
+              margin-right: 5px;
+              margin-top: -15px;
+            }
+
+            > .quantity {
+              padding-right: 5px;
+            }
+            > .name {
+              flex :1;
+            }
+            
+          }
+        }
+
+      }
+
+    }
+
+`;
+
+
+const OrderPage = ({data}:any) => {
+
+    const [order,setOrder] = useState<any>();
+    const [loading,setLoading] = useState(false);
+    const alert = useAlert();
+    const api = useApi();
+
+    var features = [];
+
+    const {updateOrder} = useOrdersDispatch();
+
+    const handleNextStep = async () => {
+      if(loading)
+          return;
+
+      setLoading(true);
+      alert.open("WARNING",{
+          message: "Atualizando pedido..."
+      })
+      const res:any = await api.put("/orders/"+data.id+"/status/"+nextStep(data));
+      // alert.open("SUCCESS",{
+      //     message: "Pedido atualizado com sucesso!"
+      // })
+      setLoading(false);
+      updateOrder(res.data)
+      setOrder((state:any) => ({...state,...res.data}));
+
+    }
+
+    const getOrder = async () => {
+        const res:any = await api.get("orders/"+data.id);
+        setOrder(res.data);
+    }
+
+    useEffect(() => {
+      setOrder(undefined)
+      getOrder();
+  },[data.id])
+
+  const [status,setStatus] = useState<any>(null)
+  const [finish,setFinish] = useState<any>(null)
+
+    
+  let texts:any = {
+    "PDG": "Pendente",
+    "CFM": "Começar a preparar",
+    "RTP": "Cliente já pode retirar",
+    "DSP": "Despachar para entrega",
+    "CON": "Concluir",
+    "CAN": "Cancelar"
+}
+
+    
+  const nextStep = (order:any) => {
+
+    const {status,type} = order
+
+    console.log(status)
+
+    if(status === "PDG")
+        return "CFM"
+
+    else if(status === "CFM" && type === "DELIVERY")
+        return "DSP"
+
+    else if(status === "CFM" && type === "TAKEOUT" ) 
+        return "RTP"
+
+    else if(status === "CFM" && type === "INDOOR") 
+        return"DSP"
+
+    else if((status === "DSP" || status === "RTP"))
+        return "CON"
+
+    else 
+        return ""
+  }
+
+   
+
+  const handleAnswer = (answer:any) => {
+    setStatus(answer)
+    setTimeout(() => {
+      if(answer === "ACCEPT")
+        setFinish("SUCCESS")
+      else
+          setFinish("FAILED")
+
+        setStatus(null)
+    },1000)
+  }
+
+  console.log(order)
+
+  var isFeating = status !== null; 
+  var isFinished = !!finish
+
+  useEffect(() => {
+    setStatus(null)
+    setFinish(null)
+  },[data])
+
+  return <Container>
+    
+    <OrderHeaderSession setOrder={setOrder} data={order || data}/>
+   
+   { (!order) 
+   ? <>Carregando...</> 
+   : <Bottom>
+      <div className="features">
+
+      {/* {
+        order.firstOrder &&   <div className='feature'>
+          <Heading align="center" title="Primeiro pedido" bold size={4}/>
+          <Heading align="center" title="Este é o primeiro pedido feito na sua loja."  size={5}/>
+        </div>
+      }
+      
+
+        <div className='feature'>
+          <Heading align="center" title="Entrega" bold size={4}/>
+          <Heading align="center" title={"Entrega prevista para "+formatTimeWithExtension(new Date(order.details.estimatedMaxDateTime))}  size={5}/>
+        </div> */}
+
+        {/* {
+          order.features.ordersCount === 0 &&   <div className='feature'>
+            <div className='feature'>
+              <Heading align="center" title="Cliente ouro" bold size={4}/>
+              <Heading align="center" title="Usuário faz pedidos com frequência"  size={5}/>
+            </div>
+        } */}
+
+      </div>
+
+      <div className='status'>
+        { order.status !== "PDG" ? <div className='box' style={{background: colors.gray50}}>
+          <Heading title={order.user.name} bold size={4} color={colors.gray700}/>
+          <Heading title={order.details.address}  size={5} color={colors.gray700}/>
+        </div> : <div className='box' style={{background: colors.red100}}>
+          <Heading  title="Pendente" bold size={4} color={colors.red400}/>
+          <Heading  title="Confirme o pedido..."  size={5} color={colors.red400}/>
+        </div> }
+      </div>
+
+      <div className='table'>
+
+        {order.items.map((item:any) => (
+           <div className='row'>
+            <div className='top'>
+              <div className='quantity'><Heading size={5} title={(item.quantity || item.qty)+"x"} bold color={colors.gray500}/></div>
+              <div className='name'><Heading size={4} title={item.name} bold/></div>
+              <div className='total'><Heading size={5} title={decimalToMoney(item.total)} bold color={colors.gray500}/></div>
+            </div>
+            {
+              item.options && <div className='bottom'>
+                
+                {
+                item.options.map((opt:any) => (
+
+                <div className='subrow'>
+                  <div className='arrow'/>
+                  {!!opt.qty && <div className='quantity'><Heading size={6} title={(opt.qty) + "x"} bold color={colors.gray500}/></div>}
+                  <div className='name'><Heading size={5} title={opt.name} color={colors.gray600} bold/></div>
+                </div>
+      
+              ))}
+
+              </div> 
+            }
+          </div>
+        
+        ))}
+
+        {/* <div className='row'>
+          <div className='top'>
+            <div className='quantity'><Heading size={5} title="1x" bold color={colors.gray500}/></div>
+            <div className='name'><Heading size={4} title="Pizza Grande" bold/></div>
+            <div className='total'><Heading size={5} title="R$ 40,00" bold color={colors.gray500}/></div>
+          </div>
+          <div className='bottom'>
+            <div className='subrow'>
+              <div className='arrow'/>
+              <div className='name'><Heading size={5} title="Civeta" color={colors.gray600} bold/></div>
+            </div>
+            <div className='subrow'>
+              <div className='arrow'/>
+              <div className='name'><Heading size={5} title="Catufrango" color={colors.gray600} bold/></div>
+            </div>
+            <div className='subrow'>
+              <div className='arrow'/>
+              <div className='quantity'><Heading size={6} title="5x" bold color={colors.gray500}/></div>
+              <div className='name'><Heading size={5} title="Tomate extra" color={colors.gray600} bold/></div>
+            </div>
+          </div>
+        </div>
+       */}
+
+       <div>
+
+        {!!order.details.deliveryFee && order.details.deliveryFee > 0 && <div className='row' style={{border: 'none'}}>
+          <div className='top'>
+            <div className='quantity'><Icon name="motocycle" color={colors.gray500} size={24}/></div>
+            <div className='name'><Heading size={5} title="Taxa de entrega" bold/></div>
+            <div className='total'><Heading size={5} title={decimalToMoney(order.details.deliveryFee)} bold color={colors.gray500}/></div>
+          </div>
+        </div>}
+
+        </div>
+
+        <div className='row' style={{border: 'none',backgroundColor: colors.gray50, borderRadius: 10}}>
+          <div className='top'>
+            <div className='quantity' style={{width: 35}}></div>
+            <div className='name'><Heading size={5} title="Valor total do pedido" color={colors.gray600} bold/></div>
+            <div className='total'><Heading size={5} title={decimalToMoney(order.total)} bold color={colors.gray500}/></div>
+          </div>
+        </div>
+
+        <div className='row' style={{marginTop: 20,border: 'none',backgroundColor: colors.gray50, borderRadius: 10}}>
+          <div className='top'>
+            <div className='quantity'><Icon name="wallet" color={colors.gray500} size={24}/></div>
+            <div className='name'>
+            <Heading size={5} title="Confirme o pedido, para ver o método de pagamento" color={colors.red400} bold/>
+            <Heading size={6} title="As informações sobre o pagamento estão ocultas até o pedido ser aceito." color={colors.gray500} />
+              </div>
+            {/* <div className='total'><Heading size={5} title="R$ 40,00" bold color={colors.gray500}/></div> */}
+          </div>
+        </div>
+
+       <Flex  gap={10} marginHorizontal={20} >
+          {data && data.status !== "CAN" && <Button variant="outline" color={colors.red400} onClick={() => {}} title={`Cancelar`}/> }
+          {data && data.status !== "PDG" && <Button variant="contained" onClick={handleNextStep} title={`Atualizar status: ${texts[nextStep(data)]}`}/> }
+        </Flex>
+
+      </div>
+   </Bottom> }
+      
+  </Container>;
+}
+
+
+export default OrderPage;
