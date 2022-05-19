@@ -113,8 +113,8 @@ export const shadow = {
 
 const config = {
     "url": {
-        api: "http://192.168.0.29:3000/", 
-        //api: "https://gestor-api.entregakii.com.br/", 
+        //  api: "http://192.168.0.29:3000/", 
+        api: "https://gestor-api.entregakii.com.br/", 
         paymentMethodsImagens: "https://files.entregakii.com.br/paymentMethods/",
         productsImagens: "https://files.entregakii.com.br/products/",
         merchantsImagens: "https://files.entregakii.com.br/merchants/",
