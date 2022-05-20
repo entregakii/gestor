@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import ReactToPrint from 'react-to-print';
 // import { Container } from './styles';
 import styled from 'styled-components';
 import { setTimeout } from 'timers';
@@ -17,7 +18,7 @@ import Image from '../elements/Imagem';
 import Loading from '../elements/Loading';
 import { useAlert } from '../hooks/alert';
 import { usePrint } from '../hooks/usePrint';
-import { decimalToMoney, formatDateTime, formatTimeWithExtension } from '../services/functions';
+import { decimalToMoney, formatDateTime, formatTimeWithExtension, toDeliveryType } from '../services/functions';
 
 
 
@@ -134,9 +135,62 @@ const OrderPage = ({data}:any) => {
     const api = useApi();
     const print = usePrint();
 
+    const printRef = useRef<any>(null);
+
     var features = [];
 
     const {updateOrder} = useOrdersDispatch();
+
+    const toPrint = order ? [
+      {text: `**** PEDIDO #${order.ref} ****`,size: 4,align:"center"},
+      {},
+      {text: toDeliveryType(order.type),size: 4,align:"center"},
+      {},
+      {text: merchant.name,size: 4,align:"center"},
+      {text: `Data do pedido: ${formatDateTime(order.orderedDateTime)}`,size: 4},
+      {text: `Entrega prevista: ${formatDateTime(order.details.estimatedMaxDateTime)}`,size: 4},
+      {text: `Cliente: ${order.user.name}`,size: 4},
+      {text: `telefone: ${order.user.phone}`,size: 4},
+      {text: `---------------`,size: 4,align:"center"},
+      {text: `ITEMS DO PEDIDO`,size: 4},
+      ...order.items.reduce((array:any,item:any) => ([
+         ...array, 
+         {text: ` ${item.qty}x ${item.name} (${decimalToMoney(item.total)})`,size: 4},
+         item.options.map((opt:any) => ({
+           text: ` +--- ${opt.qty}x ${opt.name}`,size: 4
+         })),
+         ...(item.observations ? [{text: `Obs: ${item.observations}`,size: 4}] : []),
+         {text: `. . . . . . . .`,size: 4,align:"center"},
+      ]),[]),
+      {},
+      {text: `---------------`,size: 4,align:"center"},
+      {text: `TOTAL`,size: 5},
+      {},
+      {text: `Subtotal: ${decimalToMoney(order.details.subtotal)}`,size: 4},
+      {text: `taxa de entrega: ${decimalToMoney(order.details.deliveryFee)}`,size: 4},
+      {text: `Desconto: ${decimalToMoney(order.details.discount)}`,size: 4},
+      {text: `Valor total: ${decimalToMoney(order.total)}`,size: 4},
+      {},
+      {text: `PAGAMENTO`,size: 5},
+      {},
+      {text: `Tipo: ${order.payment.name}`,size: 4},
+      {text: `${order.details.payment}`,size: 4},
+      {},
+      {text: `INFORMAÇÕES ADICIONAIS`,size: 5},
+      {text: `CPF/CNPJ na nota: ${order.details.documentNumber ? order.details.documentNumber : "-"}`,size: 4},
+      {},
+      ...(order.details.address ? [
+        {text: `Endereço para entrega`,size: 4},
+        {text: order.details.address,size: 4},
+        {}
+      ] : []),
+      ...(order.details.table ? [
+        {text: `Pedido na mesa: ${order.details.table}`,size: 4},
+        {}
+      ] : []),
+      {text: `---------------`,size: 4,align:"center"},
+      {text: "Impresso por entregakii", size: 4},
+    ] : [];
 
     const handlePrint = () => {
       print.print([
@@ -330,6 +384,24 @@ let statusColors:any = {
   "CAN": colors.red400
 }
 
+const getPageStyles = () => {
+  return `@page {
+    size: auto;
+    margin-left: 0.5in;
+    margin-right: 0.5in;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  
+
+  @media print {
+    .pagebreak {
+      page-break-before: always;
+    }
+  }`
+};
+
   console.log(order)
 
   var isFeating = status !== null; 
@@ -368,6 +440,24 @@ let statusColors:any = {
         <Heading title={`Previsão de entrega: ${formatTimeWithExtension(data.details.estimatedMaxDateTime)}`}size={4} color={colors.gray500}/>
 
     </Flex>
+
+    
+
+    <div style={{display: 'none'}}>
+      <div  ref={printRef} style={{width: '100%',maxWidth: 155,padding: '10px 0'}}>
+
+      <style type="text/css" media="print">{getPageStyles()}</style>
+
+        {toPrint.map(line=>(
+            <div style={{width: "100%",display: 'flex',justifyContent: line.align || "flex-start"}}>
+                <Heading title={line.text} size={line.size+3} />
+            </div>
+        ))}
+
+      </div>
+    </div>
+
+ 
 
     <Flex marginHorizontal={20} direction="vertical" gap={5}>
 
@@ -468,7 +558,18 @@ let statusColors:any = {
 
     <Flex  gap={10} marginHorizontal={20} >
           {data && data.status !== "CAN" && <Button variant="outline" color={colors.red400} onClick={handleOnReject} title={`Cancelar`}/> }
-         <Button variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
+          
+          {data && data.status === "PDG"
+           ? <Button disabled={true} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
+           : <ReactToPrint
+                trigger={() => {
+                  // NOTE: could just as easily return <SomeComponent />. Do NOT pass an `onClick` prop
+                  // to the root node of the returned component as it will be overwritten.
+                  return <Button disabled={false} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
+                }}
+                content={() => printRef.current}
+              />
+          }
           {data && data.status !== "PDG" && <Button variant="contained" onClick={handleNextStep} title={`Atualizar status: ${texts[nextStep(data)]}`}/> }
       </Flex>
 
