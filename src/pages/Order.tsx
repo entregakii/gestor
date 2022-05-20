@@ -141,7 +141,7 @@ const OrderPage = ({data}:any) => {
 
     const {updateOrder} = useOrdersDispatch();
 
-    const toPrint = order ? [
+    const toPrint = (order && order.status != "PDG" && order.user )? [
       {text: `**** PEDIDO #${order.ref} ****`,size: 4,align:"center"},
       {},
       {text: toDeliveryType(order.type),size: 4,align:"center"},
