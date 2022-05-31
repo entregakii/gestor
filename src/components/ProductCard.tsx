@@ -30,11 +30,34 @@ export const Container = styled.div`
             > .description{
                 padding-left: 10px;
                 color: ${colors.subtitle};
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                line-clamp: 3;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+            }
+
+            @media (max-width: 650px){
+                flex-direction: column;
+                > .description{
+                    padding-left: 0px;
+                    line-clamp: 2;
+                    -webkit-line-clamp: 2;
+                }
             }
         }
         > .right {
 
             display: flex;
+            padding-left: 10px;
+            @media (max-width: 650px){
+                flex-direction: column;
+                align-items: flex-end;
+                > .description{
+                    padding-left: 0px;
+                }
+            }
 
             .button{
                 display: flex;

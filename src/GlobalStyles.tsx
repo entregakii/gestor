@@ -30,6 +30,9 @@ export default createGlobalStyle`
 
   a{
       text-decoration: none;
+      &:visited, a:hover, a:active {
+        color: inherit;
+      }
   }
   html, body, #root {
     max-height: 100vh;
@@ -74,6 +77,116 @@ export default createGlobalStyle`
     
   }
 
+  @media (max-width: 975px) {
+    /* .max975{
+      display: block;
+    } */
+    .min975{
+      display: none;
+    }
+  }
+  @media (min-width: 976px) {
+    /* .min975{
+      display: block;
+    } */
+    .max975{
+      display: none;
+    }
+  }
 
+
+  
+
+  @media (max-width: 850px) {
+    /* .max850{
+      display: block;
+    } */
+    .min850{
+      display: none;
+    }
+  }
+
+  @media (min-width: 851px) {
+    /* .min850{
+      display: block;
+    } */
+    .max850{
+      display: none;
+    }
+  }
+
+
+  @media (max-width: 350px) {
+    /* .max350{
+      display: block;
+    } */
+    .min350{
+      display: none;
+    }
+  }
+
+  @media (min-width: 351px) {
+    /* .min350{
+      display: block;
+    } */
+    .max350{
+      display: none;
+    }
+  }
+
+
+
+  @media (max-width: 450px) {
+
+    .min450{
+      display: none;
+    }
+  }
+
+  @media (min-width: 451px) {
+
+    .max450{
+      display: none;
+    }
+  }
+
+
+  @media (max-width: 550px) {
+    .min550{
+      display: none;
+    }
+  }
+
+  @media (min-width: 551px) {
+    .max550{
+      display: none;
+    }
+  }
+
+
+  @media (max-width: 650px) {
+    .min650{
+      display: none;
+    }
+  }
+
+  @media (min-width: 651px) {
+    .max650{
+      display: none;
+    }
+  }
+
+
+  @media (max-width: 750px) {
+    .min750{
+      display: none;
+    }
+  }
+
+  @media (min-width: 751px) {
+    .max750{
+      display: none;
+    }
+  }
 
 `;

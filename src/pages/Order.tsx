@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ReactToPrint from 'react-to-print';
 // import { Container } from './styles';
 import styled from 'styled-components';
 import { setTimeout } from 'timers';
+import useSound from 'use-sound';
+import ALERT from '../assets/alert.mp3'
 import CANCELED from '../assets/illustrations/CANCELED.png';
 import CONCLUDED from '../assets/illustrations/CONCLUDED.png';
 import Illustration from '../components/Illustration';
 import OrderHeaderSession from '../components/OrderHeaderSession';
+import OrderProgress from '../components/OrderProgress';
 import StatusProgress from '../components/StatusProgress';
 import config, { colors } from '../config';
 import { useApi, useSelector } from '../contexts/main';
@@ -14,6 +18,7 @@ import { useOrdersDispatch } from '../contexts/orders';
 import Button from '../elements/Button';
 import Flex from '../elements/Flex';
 import Heading from '../elements/Heading';
+import Icon from '../elements/Icon';
 import Image from '../elements/Imagem';
 import Loading from '../elements/Loading';
 import { useAlert } from '../hooks/alert';
@@ -23,18 +28,153 @@ import { decimalToMoney, formatDateTime, formatTimeWithExtension, toDeliveryType
 
 
 const Container = styled.div`
-    position: relative;
+    position: absolute;
+    z-index: 1000;
    // padding-top: 100vh;
    display: flex;
-   flex-direction: column;
    align-items: center;
    justify-content: center;
+   height: 100vh;
+   width: 100%;
+   left: 0;
+   bottom: 0;
+   right: 0;
+   top: 0;
+   padding: 20px;
+
+   overflow: hidden;
+
+   > .background {
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-color: #0007;
+      position: absolute;
+   }
+
+   > .subcontainer{
+
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+
+    .closeBtn {
+        
+      z-index: 1000;
+        width: 48px;
+        height: 48px;
+        background-color: #ffffff;
+        border-radius: 24px;
+        margin: 5px 0;
+        position: absolute;
+        right: 24px;
+        top: 24px;
+        cursor: pointer;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: 200ms;
+
+        span {
+          max-width: 0;
+        //  display: none;
+          overflow: hidden;
+       
+        }
+
+       
+    }
+
+    > .buttons {
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      flex: 1;
+
+      .btn {
+        
+          max-width: 48px;
+          min-width: 48px;
+          height: 48px;
+          background-color: #ffffff;
+          border-radius: 24px;
+          margin: 5px 0;
+
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          transition: 200ms;
+
+          span {
+            max-width: 0;
+          //  display: none;
+            overflow: hidden;
+         
+          }
+
+          &:hover{
+
+            max-width: 400px;
+            padding: 0 10px;
+            cursor: pointer;
+            span {
+              margin: 0px 10px;
+              max-width: 200px;
+              display: block;
+              overflow: hidden;
+            }
+          }
+      }
+
+    }
+
+   > .order{
+     width: 100%;
+      position: relative;
+      background-color: #fff;
+      border: 1px solid ${colors.background_secondary};
+      border-radius: 12px;
+      // padding-top: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 550px;
+      overflow: hidden;
+
+     
+      > .content {
+        width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 10px;
+      
+      }
+
+    }
+   }
+
+   @media (max-width: 650px){
+      padding: 20px;
+
+      > .subcontainer{
+        > .buttons {
+          display: none
+        }
+      }
+   }
+
 `;
 
 
 const Bottom = styled.div`
-    height: 100vh;
-    margin-top: 50px;
+ //   height: 100vh;
+    /* margin-top: 50px; */
     max-width: 600px;
       width: 100%;
       padding: 20px;
@@ -135,6 +275,8 @@ const OrderPage = ({data}:any) => {
     const api = useApi();
     const print = usePrint();
 
+    const [play] = useSound(ALERT,{volume: 0.15});
+
     const printRef = useRef<any>(null);
 
     var features = [];
@@ -142,54 +284,45 @@ const OrderPage = ({data}:any) => {
     const {updateOrder} = useOrdersDispatch();
 
     const toPrint = (order && order.status != "PDG" && order.user )? [
-      {text: `**** PEDIDO #${order.ref} ****`,size: 4,align:"center"},
-      {},
-      {text: toDeliveryType(order.type),size: 4,align:"center"},
-      {},
+      {text: `Pedido #${order.ref}`,size: 3,align:"center"},
       {text: merchant.name,size: 4,align:"center"},
-      {text: `Data do pedido: ${formatDateTime(order.orderedDateTime)}`,size: 4},
-      {text: `Entrega prevista: ${formatDateTime(order.details.estimatedMaxDateTime)}`,size: 4},
-      {text: `Cliente: ${order.user.name}`,size: 4},
-      {text: `telefone: ${order.user.phone}`,size: 4},
-      {text: `---------------`,size: 4,align:"center"},
-      {text: `ITEMS DO PEDIDO`,size: 4},
-      ...order.items.reduce((array:any,item:any) => ([
-         ...array, 
-         {text: ` ${item.qty}x ${item.name} (${decimalToMoney(item.total)})`,size: 4},
-         item.options.map((opt:any) => ({
-           text: ` +--- ${opt.qty}x ${opt.name}`,size: 4
-         })),
-         ...(item.observations ? [{text: `Obs: ${item.observations}`,size: 4}] : []),
-         {text: `. . . . . . . .`,size: 4,align:"center"},
-      ]),[]),
-      {},
-      {text: `---------------`,size: 4,align:"center"},
-      {text: `TOTAL`,size: 5},
-      {},
-      {text: `Subtotal: ${decimalToMoney(order.details.subtotal)}`,size: 4},
-      {text: `taxa de entrega: ${decimalToMoney(order.details.deliveryFee)}`,size: 4},
-      {text: `Desconto: ${decimalToMoney(order.details.discount)}`,size: 4},
-      {text: `Valor total: ${decimalToMoney(order.total)}`,size: 4},
-      {},
-      {text: `PAGAMENTO`,size: 5},
-      {},
-      {text: `Tipo: ${order.payment.name}`,size: 4},
-      {text: `${order.details.payment}`,size: 4},
-      {},
-      {text: `INFORMAÇÕES ADICIONAIS`,size: 5},
-      {text: `CPF/CNPJ na nota: ${order.details.documentNumber ? order.details.documentNumber : "-"}`,size: 4},
-      {},
-      ...(order.details.address ? [
-        {text: `Endereço para entrega`,size: 4},
-        {text: order.details.address,size: 4},
-        {}
-      ] : []),
+      {text: "** "+toDeliveryType(order.type)+" **",size: 6,align:"center"},
+      {text: `Realizado: ${formatDateTime(order.orderedDateTime)}`,size: 5,align:"center"},
+      {text: `Entregar até: ${formatDateTime(order.details.estimatedMaxDateTime)}`,size: 5,align:"center"},
+      {separator: true},
+      {text: `Cliente: ${order.user.name}`,size: 4,align: 'center'},
+      {text: `Tel.: ${order.user.phone}${order.details.documentNumber ? ` | ${order.details.documentNumber.length <= 11 ? "CPF" : "CNPJ"}: `+order.details.documentNumber : ""}`,size: 6,align: 'center'},
+      {separator: true},
       ...(order.details.table ? [
         {text: `Pedido na mesa: ${order.details.table}`,size: 4},
-        {}
+        {separator: true},
       ] : []),
-      {text: `---------------`,size: 4,align:"center"},
-      {text: "Impresso por entregakii", size: 4},
+      ...(order.details.address ? [
+        {text: `Endereço para entrega`,size: 4,align:'center'},
+        {text: order.details.address,size: 6,align:'center'},
+        {separator: true},
+      ] : []),
+      {text: `Items do pedido`,size: 4,align:'center'},
+      ...order.items.reduce((array:any,item:any) => ([
+         ...array, 
+         {text: ` ${item.qty}x ${item.name} (${decimalToMoney(item.total)})`,size: 5},
+         ...item.options.map((opt:any) => ({
+           text: ` ┗ ${opt.qty}x ${opt.name}`,size: 6
+         })),
+         ...(item.observations ? [{text: `  ✎ Obs: ${item.observations}`,size: 7}] : []),
+        
+      ]),[]),
+      {separator: true},
+      {text: `Subtotal: ${decimalToMoney(order.details.subtotal)}`,size: 6},
+      {text: `taxa de entrega: ${decimalToMoney(order.details.deliveryFee)}`,size: 6},
+      {text: `Desconto: ${decimalToMoney(order.details.discount)}`,size: 6},
+      {text: `Total: ${decimalToMoney(order.total)}`,size: 4},
+      {separator: true},
+      {text: `Forma de pagamento`,size: 4},
+      {text: `Tipo: ${order.payment.name}`,size: 6},
+      {text: `${order.details.payment ? order.details.payment : ""}`,size: 6},
+      {separator: true},
+      {text: "Impresso por entregakii.com.br", size: 6,align:'flex-end'},
     ] : [];
 
     const handlePrint = () => {
@@ -251,6 +384,7 @@ const OrderPage = ({data}:any) => {
       if(loading)
           return;
 
+
       setLoading(true);
       alert.open("WARNING",{
           message: "Atualizando pedido..."
@@ -260,6 +394,7 @@ const OrderPage = ({data}:any) => {
      
         const res:any = await api.put("/orders/"+data.id+"/status/"+nextStep(data));
       
+        play()
       
 
       // alert.open("SUCCESS",{
@@ -304,11 +439,11 @@ const OrderPage = ({data}:any) => {
     
   let texts:any = {
     "PDG": "Pendente",
-    "CFM": "Começar a preparar",
-    "RTP": "Cliente já pode retirar",
-    "DSP": "Despachar para entrega",
-    "CON": "Concluir",
-    "CAN": "Cancelar"
+    "CFM": "Preparando",
+    "RTP": "Aguardando cliente",
+    "DSP": "Entregando",
+    "CON": "Concluído",
+    "CAN": "Cancelado"
 }
 
     
@@ -386,20 +521,19 @@ let statusColors:any = {
 
 const getPageStyles = () => {
   return `@page {
-    size: auto;
-    margin-left: 0.5in;
-    margin-right: 0.5in;
-    margin-top: 0;
-    margin-bottom: 0;
+    margin: 20mm 0 10mm 0;
+  }
+    page-break-before: always;
   }
 
-  
-
-  @media print {
-    .pagebreak {
-      page-break-before: always;
+  @media print 
+{
+    body {
+        padding-top:2cm;
     }
-  }`
+}
+
+ `
 };
 
   console.log(order)
@@ -419,165 +553,232 @@ const getPageStyles = () => {
   
 
   return <Container>
-    
-    <OrderHeaderSession setOrder={setOrder} data={order || data}/>
-   
-   { (!order) 
-   ? <Loading/> 
-   : <Bottom>
-      
 
-      <StatusProgress data={data} />
+    <div className='subcontainer'>
 
-    <Flex marginHorizontal={20} direction="vertical" gap={5}>
+      <Link to="/pedidos"><div className='closeBtn'>
+        <Icon name="close"/>
+      </div></Link>
 
-        <Flex gap={10} >
-            <Heading title={"Pedido #"+order.ref} size={4} color={colors.gray600} bold/>
-            <Heading color={statusColors[order.status]} title={textStatus[order.status]} size={5} bold/>
-        </Flex>
-
-        <Heading title={`${formatTimeWithExtension(data.orderedDateTime)}`}size={4} color={colors.gray500}/>
-        <Heading title={`Previsão de entrega: ${formatTimeWithExtension(data.details.estimatedMaxDateTime)}`}size={4} color={colors.gray500}/>
-
-    </Flex>
-
-    
-
-    <div style={{display: 'none'}}>
-      <div  ref={printRef} style={{width: '100%',maxWidth: 155,padding: '10px 0'}}>
-
-      <style type="text/css" media="print">{getPageStyles()}</style>
-
-        {toPrint.map(line=>(
-            <div style={{width: "100%",display: 'flex',justifyContent: line.align || "flex-start"}}>
-                <Heading title={line.text} size={line.size+3} />
-            </div>
-        ))}
-
-      </div>
-    </div>
-
- 
-
-    <Flex marginHorizontal={20} direction="vertical" gap={5}>
-
-     
-          <Heading title={"Efetuado por"} size={4} color={colors.gray600} bold/>
-          { order.status !== "PDG" ? <>
-          <Heading  title={order.user.name} size={4} color={colors.gray500}/>
-          <Heading  title={"Telefone: "+order.user.phone} size={5} color={colors.gray500}/>
-          { !!order.details.documentNumber && <Heading title={"CPF: "+order.details.documentNumber} size={5} color={colors.gray500}/>}
-          </> :  <Heading title="Confirme para vizualizar" size={5} color={colors.red400}/> }
-
-
-    </Flex>
-
-  
-    <Flex marginHorizontal={20} direction="vertical" gap={5}>
-
-        <Heading title="Forma de pagamento" size={4} color={colors.gray600} bold/>
-        { order.status === "PDG" ? <Heading title="Confirme para vizualizar a forma de pagamento" size={5} color={colors.red400}/>
-        : <Flex gap={10}>
-          <Flex gap={5}>
-            <Image src={config.url.paymentMethodsImagens+order.payment.picture} width={25}/>
-            <Heading title={order.payment.name} size={4} color={colors.gray500}/>
-          </Flex>
-          {!!order.details.moneyChange && <Heading title={order.details.moneyChange} size={5} color={colors.gray500}/> }
-        </Flex>
-    }
-
-    </Flex>
-
-    <Flex marginHorizontal={20} direction="vertical" gap={5}>
-      <Heading title="Tipo de pedido" size={4} color={colors.gray600} bold/>
-      <Heading title={types[order.type]} size={4} color={colors.gray500}/>
-      {order.details.address && <Heading title={"Endereço para entrega: "+order.details.address} size={5} color={colors.gray500}/>}
-      {order.details.table && <Heading title={"Mesa: "+order.details.table} size={5} color={colors.gray500}/>}
-    </Flex>
-    
-    <Heading title="Detalhes" size={3} color={colors.gray500}/>
-    <div className='table'>
-
-      {order.items.map((item:any) => (
-        <div className='row'>
-          <div className='top'>
-            <div className='quantity'><Heading size={5} title={(item.quantity || item.qty)+"x"} bold color={colors.gray500}/></div>
-            <div className='name'><Heading size={4} title={item.name} bold/></div>
-            <div className='total'><Heading size={5} title={decimalToMoney(item.total)} bold color={colors.gray500}/></div>
+      <div className='buttons' style={{alignItems: 'flex-end'}}>
+          <div className='btn'>
+              <span>
+                <Heading title="Cancelar pedido" size={4} nowrap bold/>
+              </span>
+              <Icon name="cancel_order"/>
           </div>
-          {
-            item.options && <div className='bottom'>
-              
-              {
-              item.options.map((opt:any) => (
-
-              <div className='subrow'>
-                <div className='arrow'/>
-                {!!opt.qty && <div className='quantity'><Heading size={6} title={(opt.qty) + "x"} bold color={colors.gray500}/></div>}
-                <div className='name'><Heading size={5} title={opt.name} color={colors.gray600} bold/></div>
-              </div>
-
-            ))}
-
-            </div> 
-          }
-        </div>
-
-      ))}
-
+          <ReactToPrint
+            pageStyle={getPageStyles}
+            trigger={() => <div className='btn'>
+                <span>
+                  <Heading  size={4} title="Imprimir" nowrap bold/>
+                </span>
+                <Icon name="printer"/>
+            </div>}
+            content={() => printRef.current}
+          />
+{/*          
+         <Link to="/pedidos">
+          <div className='btn'>
+              <span>
+                <Heading title="Fechar" nowrap bold/>
+              </span>
+              <Icon name="close"/>
+          </div>
+          </Link> */}
       </div>
 
+      <div className='order'>
+
+      <div className="content">
+      
     
-    <Flex marginHorizontal={10} justifyContent="space-between" >
-        <Heading title={`${order.items.length} ite${order.items.length === 1 ? "m" : "ns"} | Subtotal:`} size={4} color={colors.gray600}/>
-        <Heading title={decimalToMoney(order.details.subtotal)} size={4} color={colors.gray600}/>
-    </Flex>
+    { (!order) 
+    ? <Loading/> 
+    : <Bottom>
+        
+        <OrderProgress data={data} type="bar"/>
+        {/* <StatusProgress data={data} /> */}
 
-    <Flex  marginHorizontal={15} justifyContent="space-between" >
-        <div>
-            <Heading title="Taxa de entrega" size={4} color={colors.gray600}/>
-            <Heading title={`Entregar até ${formatTimeWithExtension(data.details.estimatedMaxDateTime)}`} size={5} color={colors.gray400}/>
-        </div>
-        <Heading title={decimalToMoney(order.details.deliveryFee)}  size={4} color={colors.gray600}/>
-    </Flex>
 
-    <Flex  marginHorizontal={15} justifyContent="space-between" >
-        <div>
-            <Heading title="Cupom de desconto" size={4} color={colors.gray600}/>
-            <Heading title={(order.coupon ? order.coupon.name : "Não está mais disponível")} size={5} color={colors.gray400}/>
-        </div>
-        <Heading title={"- "+decimalToMoney(order.details.discount)} size={4}  color={colors.gray600}/>
-    </Flex>
-   
-    <Flex  marginHorizontal={15} justifyContent="space-between" >
-        <Heading title="Total do pedido" size={4} color={colors.gray600} bold/>
-        <Heading title={decimalToMoney(order.total)} bold  size={4} color={colors.gray600}/>
-    </Flex>
+      <Flex marginHorizontal={20} direction="vertical" gap={5}>
 
-    <div style={{height: 20}}/>
+          <Flex gap={10} >
+              <Heading title={"Pedido #"+order.ref} size={4} color={colors.gray600} bold/>
+              <Heading color={statusColors[order.status]} title={textStatus[order.status]} size={5} bold/>
+          </Flex>
 
-    <Flex  gap={10} marginHorizontal={20} >
-          {data && data.status !== "CAN" && <Button variant="outline" color={colors.red400} onClick={handleOnReject} title={`Cancelar`}/> }
-          
-          {data && data.status === "PDG"
-           ? <Button disabled={true} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
-           : <ReactToPrint
-                trigger={() => {
-                  // NOTE: could just as easily return <SomeComponent />. Do NOT pass an `onClick` prop
-                  // to the root node of the returned component as it will be overwritten.
-                  return <Button disabled={false} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
-                }}
-                content={() => printRef.current}
-              />
-          }
-          {data && data.status !== "PDG" && <Button variant="contained" onClick={handleNextStep} title={`Atualizar status: ${texts[nextStep(data)]}`}/> }
+          <Heading title={`${formatTimeWithExtension(data.orderedDateTime)}`}size={4} color={colors.gray500}/>
+          <Heading title={`Previsão de entrega: ${formatTimeWithExtension(data.details.estimatedMaxDateTime)}`}size={4} color={colors.gray500}/>
+
       </Flex>
 
-      <div style={{height: 50}}/>
+
+      { data.status === "PDG" && <OrderHeaderSession setOrder={setOrder} data={order || data}/> }
+
 
       
-   </Bottom> }
+
+      <div style={{display: 'none'}}>
+        <div  ref={printRef} style={{width: '100%',display: 'flex',justifyContent:'center'}}>
+
+        <style type="text/css" media="print">{getPageStyles()}</style>
+        <div style={{maxWidth: '80mm',padding: '8mm'}}>
+          {toPrint.map(line=>{
+
+            if(line.separator)
+              return <div style={{display: 'flex',alignItems: "center",padding: "2px 0",overflow: 'hidden'}}>
+                <Heading title={[...new Array(50)].join("- ")} align="center" size={9} bold nowrap/>
+            </div>
+            
+              else if(line.text)
+                return <div style={{display: 'flex',justifyContent: line.align || "flex-start",padding: "2px 0"}}>
+                  <Heading title={line.text} size={line.size+3} bold/>
+              </div>
+          })}
+        </div>
+        </div>
+      </div>
+
+  
+
+      <Flex marginHorizontal={20} direction="vertical" gap={5}>
+
       
+            <Heading title={"Efetuado por"} size={4} color={colors.gray600} bold/>
+            { order.status !== "PDG" ? <>
+            <Heading  title={order.user.name} size={4} color={colors.gray500}/>
+            <Heading  title={"Telefone: "+order.user.phone} size={5} color={colors.gray500}/>
+            { !!order.details.documentNumber && <Heading title={"CPF: "+order.details.documentNumber} size={5} color={colors.gray500}/>}
+            </> :  <Heading title="Confirme para vizualizar" size={5} color={colors.red400}/> }
+
+
+      </Flex>
+
+    
+      <Flex marginHorizontal={20} direction="vertical" gap={5}>
+
+          <Heading title="Forma de pagamento" size={4} color={colors.gray600} bold/>
+          { order.status === "PDG" ? <Heading title="Confirme para vizualizar a forma de pagamento" size={5} color={colors.red400}/>
+          : <Flex gap={10}>
+            <Flex gap={5}>
+              <Image src={config.url.paymentMethodsImagens+order.payment.picture} width={25}/>
+              <Heading title={order.payment.name} size={4} color={colors.gray500}/>
+            </Flex>
+            {!!order.details.moneyChange && <Heading title={order.details.moneyChange} size={5} color={colors.gray500}/> }
+          </Flex>
+      }
+
+      </Flex>
+
+      <Flex marginHorizontal={20} direction="vertical" gap={5}>
+        <Heading title="Tipo de pedido" size={4} color={colors.gray600} bold/>
+        <Heading title={types[order.type]} size={4} color={colors.gray500}/>
+        {order.details.address && <Heading title={"Endereço para entrega: "+order.details.address} size={5} color={colors.gray500}/>}
+        {order.details.table && <Heading title={"Mesa: "+order.details.table} size={5} color={colors.gray500}/>}
+      </Flex>
+      
+      <Heading title="Detalhes" size={3} color={colors.gray500}/>
+      <div className='table'>
+
+        {order.items.map((item:any) => (
+          <div className='row'>
+            <div className='top'>
+              <div className='quantity'><Heading size={5} title={(item.quantity || item.qty)+"x"} bold color={colors.gray500}/></div>
+              <div className='name'><Heading size={4} title={item.name} bold/></div>
+              <div className='total'><Heading size={5} title={decimalToMoney(item.total)} bold color={colors.gray500}/></div>
+            </div>
+            {
+              item.options && <div className='bottom'>
+                
+                {
+                item.options.map((opt:any) => (
+
+                <div className='subrow'>
+                  <div className='arrow'/>
+                  {!!opt.qty && <div className='quantity'><Heading size={6} title={(opt.qty) + "x"} bold color={colors.gray500}/></div>}
+                  <div className='name'><Heading size={5} title={opt.name} color={colors.gray600} bold/></div>
+                </div>
+
+              ))}
+
+              </div> 
+            }
+          </div>
+
+        ))}
+
+        </div>
+
+      
+      <Flex marginHorizontal={10} justifyContent="space-between" >
+          <Heading title={`${order.items.length} ite${order.items.length === 1 ? "m" : "ns"} | Subtotal:`} size={4} color={colors.gray600}/>
+          <Heading title={decimalToMoney(order.details.subtotal)} size={4} color={colors.gray600}/>
+      </Flex>
+
+      <Flex  marginHorizontal={15} justifyContent="space-between" >
+          <div>
+              <Heading title="Taxa de entrega" size={4} color={colors.gray600}/>
+              <Heading title={`Entregar até ${formatTimeWithExtension(data.details.estimatedMaxDateTime)}`} size={5} color={colors.gray400}/>
+          </div>
+          <Heading title={decimalToMoney(order.details.deliveryFee)}  size={4} color={colors.gray600}/>
+      </Flex>
+
+      <Flex  marginHorizontal={15} justifyContent="space-between" >
+          <div>
+              <Heading title="Cupom de desconto" size={4} color={colors.gray600}/>
+              <Heading title={(order.coupon ? order.coupon.name : "Não está mais disponível")} size={5} color={colors.gray400}/>
+          </div>
+          <Heading title={"- "+decimalToMoney(order.details.discount)} size={4}  color={colors.gray600}/>
+      </Flex>
+    
+      <Flex  marginHorizontal={15} justifyContent="space-between" >
+          <Heading title="Total do pedido" size={4} color={colors.gray600} bold/>
+          <Heading title={decimalToMoney(order.total)} bold  size={4} color={colors.gray600}/>
+      </Flex>
+
+      <div style={{height: 20}}/>
+
+     <div className='max650'>
+        <Flex  gap={10} marginHorizontal={20} >
+              {data && data.status !== "CAN" && <Button variant="outline" color={colors.red400} onClick={handleOnReject} title={`Cancelar`}/> }
+              
+              {data && data.status === "PDG"
+              ? <Button disabled={true} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
+              : <ReactToPrint
+                    pageStyle={getPageStyles}
+                    trigger={() => {
+                      // NOTE: could just as easily return <SomeComponent />. Do NOT pass an `onClick` prop
+                      // to the root node of the returned component as it will be overwritten.
+                      return <Button disabled={false} variant="outline" color={colors.gray700} onClick={handlePrint} title={`Imprimir`}/> 
+                    }}
+                    content={() => printRef.current}
+                  />
+              }
+              {data && data.status !== "PDG" && <Button variant="contained" onClick={handleNextStep} title={`Atualizar status: ${texts[nextStep(data)]}`}/> }
+          </Flex>
+        </div>
+
+
+        
+    </Bottom> }
+    </div>
+    </div>
+
+    <div className='buttons' style={{alignItems: 'flex-start'}}>
+        <div className='btn' onClick={handleNextStep}>
+            <Icon name="arrow-right"/>
+            <span>
+                <Heading size={4} title="Avançar etapa" nowrap bold/>
+                <Heading size={7} title={texts[nextStep(data)]} nowrap />
+            </span>
+        </div>
+    </div>
+
+   </div>
+
+   <div className='background'/>
+
   </Container>;
 }
 

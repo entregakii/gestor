@@ -104,15 +104,15 @@ const HomePage = ({match}:any) => {
         <Heading size={4} color={colors.gray500} title="Pedidos concluídos"/>
         <div style={{display: 'flex',flex: 1}}>
             <div style={{display: 'flex',flex: 1,alignItems: 'center',justifyContent:'center',flexDirection: 'column'}}>
-              <Heading size={1} bold color={colors.gray500} title={first}/>
+              <Heading size={2} bold color={colors.gray500} title={first}/>
               <Heading align="center" size={4} color={colors.gray500} title="Ultimas 24h"/>
             </div>
             <div style={{display: 'flex',flex: 1,alignItems: 'center',justifyContent:'center',flexDirection: 'column'}}>
-              <Heading size={1} bold color={colors.gray500} title={second}/>
+              <Heading size={2} bold color={colors.gray500} title={second}/>
               <Heading align="center" size={4} color={colors.gray500} title="Ultima semana"/>
             </div>
             <div style={{display: 'flex',flex: 1,alignItems: 'center',justifyContent:'center',flexDirection: 'column'}}>
-              <Heading size={1} bold color={colors.gray500} title={decimalToMoney(third)}/>
+              <Heading size={2} bold color={colors.gray500} title={decimalToMoney(third)}/>
               <Heading align="center" size={4} color={colors.gray500} title="Ticket Médio"/>
             </div>
         </div>
@@ -367,6 +367,8 @@ const HomePage = ({match}:any) => {
     grid-template-columns: repeat(3, 300px);
     grid-gap: 10px;
     grid-auto-rows: 250px;
+    padding: 0 10px;
+
     
     .gridItem {
       .flex{
@@ -379,6 +381,14 @@ const HomePage = ({match}:any) => {
       padding: 20px;
       background-color: ${colors.gray50};
       border-radius: 10px;
+    }
+
+    @media (max-width: 940px){
+      grid-template-columns: repeat(2, 300px);
+    }
+
+    @media (max-width: 640px){
+      grid-template-columns: repeat(2, 1fr);
     }
 `;
 

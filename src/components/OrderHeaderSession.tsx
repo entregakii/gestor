@@ -13,8 +13,8 @@ const Container = styled.div`
     /* background-color: #f40; */
     width: 100%;
     overflow: hidden;
-    height: 100vh;
     position: relative;
+    padding: 50px 0;
     z-index: 10;
     left: 0;
     right: 0;
@@ -181,7 +181,6 @@ const Container = styled.div`
       bottom: 0;
       position: absolute;
       width: 100%;
-      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -339,7 +338,6 @@ const OrderHeaderSession = ({data,setOrder}:any) => {
         <div className="header">
             {/* <Heading align="center" title={`Pedido #${data.ref.toString()}`} bold size={2}/> */}
             {/* {data && data.status !== "PDG" && <StatusProgress data={data} /> } */}
-            {data && data.status === "PDG" && <Heading align="center" title="Aceite ou recuse este pedido" bold size={4}/> }
         </div>
         {data.status === "PDG" && <div className={"buttons "+(loading ? "loading": "")}>
             <div className='reject' onClick={handleOnReject}>
@@ -361,7 +359,9 @@ const OrderHeaderSession = ({data,setOrder}:any) => {
                 <Heading align="center" title="Aceitar" bold size={4}/>
             </div>
         </div> }
-        
+        {data && data.status === "PDG" && <Heading color={colors.gray400} align="center" title="Aceite ou recuse este pedido" bold size={4}/> }
+
+{/*         
         {data.status === "PDG" && <div className="footer" onClick={() => {
           let el = document.getElementById("content")
 
@@ -370,7 +370,7 @@ const OrderHeaderSession = ({data,setOrder}:any) => {
         }}>
             <Heading align="center" title="Ver detalhes" bold size={4}/>
             <Icon name="arrow-down" size={32}/>
-        </div> }
+        </div> } */}
     </div>
 
     </Container>;

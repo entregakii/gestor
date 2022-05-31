@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 
 import styled from 'styled-components';
@@ -7,6 +7,7 @@ import { colors } from '../config';
 import { useDispatch } from '../contexts/main';
 import Heading from '../elements/Heading';
 import Icon from '../elements/Icon';
+import { useAlert } from '../hooks/alert';
 
 export const Container = styled.div`
     background-color: ${colors.background_secondary};
@@ -73,6 +74,24 @@ export const Container = styled.div`
 const Navigator = () => {
 
     const {logout} = useDispatch()
+    const alert = useAlert()
+
+    const Prevent = () => {
+        const unloadCallback = (event:any) => {
+            // alert.open("WARNING",{message: "Tem certeza que deseja sair ? você deixará de receber pedidos!"})
+            event.preventDefault();
+            event.returnValue = "";
+            return ''
+          };
+        
+          window.addEventListener("beforeunload", unloadCallback);
+          //return () => window.removeEventListener("beforeunload", unloadCallback);
+    }
+
+    useEffect(() => {
+        Prevent()
+      }, []);
+
 
   return <Container>
 

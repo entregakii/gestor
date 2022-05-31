@@ -31,7 +31,7 @@ export const Container = styled.button`
    justify-content: center;
    align-items: center;
    font-size: 14px;
-    
+    flex-shrink : 0;
    
     padding: 0px 30px;
     height: 36px;

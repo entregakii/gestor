@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Navigator from '../components/Navigator';
 import OrdersNavigator from '../components/OrdersNavigator';
 import Rating from '../components/Rating';
+import Tutorial from '../components/Tutorial';
 import { colors } from '../config';
 import CatalogPage from '../pages/Catalog';
 import DeliveriesPage from '../pages/Deliveries';
@@ -17,36 +18,27 @@ export const Container = styled.div`
 
     display: flex;
     overflow: hidden;
+    flex-direction: column;
     height: 100%;
     background-color: ${colors.background};
 
-    > .right {
+    > .routes {
         flex: 1;
         display: flex;
-        height: 100%;
+      //  height: 100%;
+        width: 100%;
         justify-content: center;
-       
-        flex-direction: column;
+        overflow-y: auto;
 
-        /* > .content {
-            width: 100%;
-        } */
+  
         > .content {
-            overflow: auto;
+            max-width: 975px;
             width: 100%;
-            height: 100%;
+           // height: 100%;
         }
         
     }
 
-    @media(max-width: 600px){
-        /* > .left{
-            display: none;
-        } */
-        &{
-            flex-direction: column-reverse;
-        }
-    }
 
 `;
 
@@ -55,24 +47,10 @@ const Stack = (props:any) => {
 
   return <BrowserRouter><Container>
 
-        <div className="left">
-
-        <Navigator/>
-     
-    {/* 
-            <Route component={({match}:any) => {
-
-                if(match.url !== "/")
-                    return  <Navigator/>
-                else
-                    return <></>
-            }}/> */}
-
-        </div>
-        <OrdersNavigator/>
-        <div className="right">
-            {/* <Rating/> */}
-            <Header/>
+        <Header/>
+        <Tutorial/>
+        
+        <div className="routes">
             <div className="content" id="content">
                 <Switch>
 

@@ -276,22 +276,26 @@ export const hourToDecimal = (string: string = "00:00") => {
     return total
 }
 
-export const checkIsOpen = (schedules:any[] = []) => {
+export const checkIsOpen = (schedules:any) => {
     let datetime = new Date();
-    let dayOfWeek = datetime.getDay();
+    let weekdays = ["DOM","SEG","TER","QUA","QUI","SEX","SAB"]
+    let dayOfWeek = weekdays[datetime.getDay()];
     let now = datetime.getHours() + (datetime.getMinutes()/60)
-    let isOpen = false;
+    let closein = 0
 
+    schedules.map((sc:any) => {
+      
     
+        if(sc.weekDay === dayOfWeek){
 
-    schedules.map(sc => {
-        if(sc.dayOfWeek === dayOfWeek){
+          
 
-            if(now > hourToDecimal(sc.startTime) && now < hourToDecimal(sc.endTime)){
-                isOpen = (true) 
+            if(now > parseFloat(sc.startTime) && now < parseFloat(sc.endTime)){
+                closein = parseFloat(sc.endTime) - now;
+              // setIsOpen(true) 
             }
         }
     })
 
-    return isOpen
+    return closein > 0
 }

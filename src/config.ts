@@ -26,7 +26,8 @@ export const colors = {
     green50:  "#CDFEE9",
 
     primary: "#000000",
-    secondary: "#276EF1",
+    secondary: "#2334FF",
+    third: "#E0DFF2",
     gray900:  "#141414",
     gray800:  "#1F1F1F",
     gray700:  "#333333",

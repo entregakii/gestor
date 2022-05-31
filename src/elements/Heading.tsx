@@ -28,8 +28,6 @@ export interface HeadingProps {
 
 const Heading = ({title= "",nowrap,textDecoration,size = 3,bold=false,color=colors.gray700,align,padding=0}:HeadingProps) => {
   return <div style={{
-      fontFamily: bold ? "Whitney Bold": "Whitney",
-      fontSize: sizes[size],
       color,
       textAlign: align,
       padding: `${padding}px`,
@@ -37,8 +35,13 @@ const Heading = ({title= "",nowrap,textDecoration,size = 3,bold=false,color=colo
       alignItems: 'center',
       textDecoration,
       ...(nowrap ? ({whiteSpace: 'nowrap'}) : ({}))
-  }}>
-      {title}
+  }} >
+      <span style={{
+             fontFamily: bold ? "Whitney Bold": "Whitney",
+             fontSize: sizes[size],
+      }} dangerouslySetInnerHTML={{
+      __html: title.toString().replace(/\*([^*]+?)\*/g, "<b>$1<\/b>").replace(/\_\_([^*]+?)\_\_/g, "<u>$1<\/u>").replace(/\_([^*]+?)\_/g, "<i>$1<\/i>")
+  }}/>
   </div>;
 }
 

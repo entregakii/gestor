@@ -56,7 +56,7 @@ const CatalogPage = ({match}:any) => {
 
       <Heading title="Catalogo" bold size={1} align="left"/>
       <Heading title="Pause ou ative rapidamente os itens dos cardapios aqui!" size={4} align="left"/>
-      <TextInput title="Filtrar produto" onInput={setFilter}/>
+      <TextInput title="Filtrar produto" value={filter} onInput={setFilter}/>
 
       {catalog.map(category => (
         <CategoryCard data={category} filter={filter}/>

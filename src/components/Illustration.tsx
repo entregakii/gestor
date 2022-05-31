@@ -11,10 +11,11 @@ const Container = styled.div`
     justify-content: center;
     width: 100%;
     height: 100%;
+    flex: 1;
 
     img {
-        width: 200px;
-        height: 200px;
+        width: 150px;
+        height: 150px;
         margin: 20px;
     }
 `;
@@ -23,8 +24,8 @@ const Container = styled.div`
 const Illustration = ({src,title,description}:any) => {
   return <Container>
       <img src={src}/>
-      <Heading size={2} title={title} bold/>
-      <Heading size={4} color={colors.gray500} title={description} bold/>
+      <Heading size={4} align="center" title={title} bold/>
+      <Heading size={6} align="center" color={colors.gray500} title={description} bold/>
   </Container>;
 }
 

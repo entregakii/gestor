@@ -11,7 +11,7 @@ const Container = styled.div`
 
 type FlexProps = {
   src: string
-  width?: number
+  width?: any
   height?: number
   radius?: number
 }
